@@ -1,0 +1,155 @@
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+from openpyxl.chart import BarChart, Reference
+from openpyxl.utils import get_column_letter
+
+wb = Workbook()
+ws = wb.active
+ws.title = "Feira de Empreendedorismo"
+
+# Título
+ws.merge_cells("A1:F1")
+ws["A1"] = "Feira de Empreendedorismo — Controle Financeiro"
+ws["A1"].font = Font(bold=True, size=16)
+ws["A1"].alignment = Alignment(horizontal="center")
+
+# Cabeçalhos
+headers = ["Grupo", "Produto", "Gastos", "Vendas", "Lucro", "Margem de Lucro"]
+
+for coluna, titulo in enumerate(headers, 1):
+    celula = ws.cell(row=3, column=coluna, value=titulo)
+    celula.font = Font(bold=True)
+    celula.alignment = Alignment(horizontal="center")
+    celula.fill = PatternFill("solid", fgColor="D9EAF7")
+
+# Dados
+dados = [
+    ["Grupo 1", "Brigadeiros", 80, 150],
+    ["Grupo 2", "Pipoca Gourmet", 100, 190],
+    ["Grupo 3", "Artesanato", 120, 220],
+    ["Grupo 4", "Bebidas", 90, 180],
+    ["Grupo 5", "Doces", 70, 140],
+]
+
+for linha, dados_grupo in enumerate(dados, 4):
+    for coluna, valor in enumerate(dados_grupo, 1):
+        ws.cell(row=linha, column=coluna, value=valor)
+
+    ws.cell(row=linha, column=5, value=f"=D{linha}-C{linha}")
+    ws.cell(row=linha, column=6, value=f"=IF(D{linha}=0,0,E{linha}/D{linha})")
+
+# Total
+linha_total = 9
+ws.cell(linha_total, 1, "TOTAL").font = Font(bold=True)
+
+for coluna in [3, 4, 5]:
+    letra = get_column_letter(coluna)
+    ws.cell(
+        linha_total,
+        coluna,
+        f"=SUM({letra}4:{letra}8)"
+    ).font = Font(bold=True)
+
+ws.cell(
+    linha_total,
+    6,
+    "=IF(D9=0,0,E9/D9)"
+).font = Font(bold=True)
+
+# Formatação dos valores
+for linha in range(4, 10):
+    for coluna in [3, 4, 5]:
+        ws.cell(
+            linha,
+            coluna
+        ).number_format = 'R$ #,##0.00'
+
+    ws.cell(
+        linha,
+        6
+    ).number_format = '0.0%'
+
+# Bordas
+borda = Side(
+    style="thin",
+    color="B7B7B7"
+)
+
+for linha in ws.iter_rows(
+    min_row=3,
+    max_row=9,
+    min_col=1,
+    max_col=6
+):
+    for celula in linha:
+        celula.border = Border(
+            left=borda,
+            right=borda,
+            top=borda,
+            bottom=borda
+        )
+
+        celula.alignment = Alignment(
+            vertical="center"
+        )
+
+# Destaque do total
+for celula in ws[9]:
+    celula.fill = PatternFill(
+        "solid",
+        fgColor="E2F0D9"
+    )
+
+# Largura das colunas
+larguras = [14, 22, 16, 16, 16, 18]
+
+for numero, largura in enumerate(larguras, 1):
+    ws.column_dimensions[
+        get_column_letter(numero)
+    ].width = largura
+
+# Gráfico
+grafico = BarChart()
+
+grafico.title = "Vendas x Gastos por Grupo"
+grafico.y_axis.title = "Valor (R$)"
+grafico.x_axis.title = "Grupo"
+
+dados_grafico = Reference(
+    ws,
+    min_col=3,
+    max_col=4,
+    min_row=3,
+    max_row=8
+)
+
+categorias = Reference(
+    ws,
+    min_col=1,
+    min_row=4,
+    max_row=8
+)
+
+grafico.add_data(
+    dados_grafico,
+    titles_from_data=True
+)
+
+grafico.set_categories(categorias)
+
+grafico.height = 8
+grafico.width = 15
+
+ws.add_chart(grafico, "H3")
+
+# Configurações
+ws.freeze_panes = "A4"
+ws.auto_filter.ref = "A3:F8"
+
+# Salvar
+nome_arquivo = "Planilha_Feira_de_Empreendedorismo.xlsx"
+
+wb.save(nome_arquivo)
+
+print(f"Planilha criada com sucesso: {nome_arquivo}")
+```
